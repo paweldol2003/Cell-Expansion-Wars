@@ -1,9 +1,12 @@
+#main.py
 import pygame
 import sys
 import stages
 import cell
-import scenes 
+from scenes import GameScene, MenuScene
+
 import math
+from assets.resources import load_images
 
 # Inicjalizacja Pygame
 pygame.init()
@@ -12,21 +15,14 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Cell Expansion Wars")
-
-# Kolory
-WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
-BLUE = (100, 149, 237)
-RED = (220, 20, 60)
-
-
+images = load_images()
 
 
 # Główna pętla gry
 def main():
     clock = pygame.time.Clock()
     current_scene = "menu"
-    menu = scenes.MenuScene()
+    menu = MenuScene(images)
     game = None
 
     while True:
@@ -36,20 +32,30 @@ def main():
         if current_scene == "menu":
             result = menu.handle_events(events)
             if result:
-                game = scenes.GameScene(result())
+                
+                if result == "stage_1":
+                    cells = stages.get_stage_1(images)
+                    print("Liczba komórek w etapie:", len(cells))
+                    for cell in cells:
+                        print("Cell:", cell.x, cell.y, cell.image)
 
+                elif result == "stage_2":
+                    cells = stages.get_stage_2(images)
+                else:
+                    cells = []
+
+                game = GameScene(cells, images)
                 current_scene = "game"
             menu.draw(WINDOW)
 
         elif current_scene == "game":
             result = game.handle_events(events)
             if result:
-                menu = scenes.MenuScene()
+                menu = MenuScene(images)
                 current_scene = "menu"
             else:
                 game.update()
                 game.draw(WINDOW)
-
 
         pygame.display.flip()
 
