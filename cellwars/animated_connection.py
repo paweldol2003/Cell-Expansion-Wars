@@ -1,5 +1,8 @@
+# animated_connection.py
 import pygame
 import colors
+from animated_bullet import AnimatedBullet
+
 
 class AnimatedConnection:
     def __init__(self, start_cell, end_cell, speed=0.01):
@@ -15,11 +18,14 @@ class AnimatedConnection:
         self.to_destroy = False
 
     def update(self, shoot):
+        mutual = (self.end_cell in self.start_cell.connections and 
+        self.start_cell in self.end_cell.connections)
         if not self.done:
             self.progress += self.speed
             if self.progress >= 1.0:
                 self.progress = 1.0
                 self.done = True
+                self.start_cell.connections.append(self.end_cell)
         else:
             # AI-controlled strzały
             if self.bullets_to_fire > 0:
@@ -34,8 +40,9 @@ class AnimatedConnection:
                 self.bullets.append(bullet)
 
             for bullet in self.bullets:
-                bullet.update()
-                if bullet.done:
+                bullet.update(mutual)
+                # if mutual : napisz mi kod który sprawi ze kula dotrze do celu w połowie drogi
+                if bullet.done and not mutual:
                     if self.start_cell.owner == self.end_cell.owner:
                         self.end_cell.units += 1
                     else:
@@ -56,40 +63,48 @@ class AnimatedConnection:
     def draw(self, surface):
         sx, sy = self.start_cell.x, self.start_cell.y
         ex, ey = self.end_cell.x, self.end_cell.y
-        mx = sx + (ex - sx) * self.progress
-        my = sy + (ey - sy) * self.progress
+        mid_x = (sx + ex) / 2
+        mid_y = (sy + ey) / 2
 
-        # Oblicz kolor z przezroczystością (zanikanie)
+        alpha = int(255 * (1 - self.removal_progress))
+        color1 = (colors.GREEN + (alpha,)) if self.start_cell.owner == "player" else (colors.RED + (alpha,))
+        color2 = (colors.GREEN + (alpha,)) if self.end_cell.owner == "player" else (colors.RED + (alpha,))
+
+        
+
         if self.removal_progress > 0:
-            alpha = int(255 * (1 - self.removal_progress))
-            color = (0, 0, 255, alpha)
             temp_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-            pygame.draw.line(temp_surface, color, (sx, sy), (mx, my), 5)
-            surface.blit(temp_surface, (0, 0))
+            target_surface = temp_surface
         else:
-            pygame.draw.line(surface, colors.BLUE, (sx, sy), (mx, my), 5)
+            target_surface = surface
+        # Obliczamy mutual dynamicznie
+        mutual = (self.end_cell in self.start_cell.connections and 
+                self.start_cell in self.end_cell.connections)
+        if mutual:
+            # Jeśli połączenie jest wzajemne, rysujemy linię dwukolorową
+            if self.progress <= 0.5:
+                # Rysujemy pierwszą część linii (od startu do środka)
+                t = self.progress / 0.5  # t rośnie od 0 do 1
+                current_mid_x = sx + (mid_x - sx) * t
+                current_mid_y = sy + (mid_y - sy) * t
+                pygame.draw.line(target_surface, color1, (sx, sy), (current_mid_x, current_mid_y), 5)
+            else:
+                # Pierwsza połowa jest już w pełni narysowana
+                pygame.draw.line(target_surface, color1, (sx, sy), (mid_x, mid_y), 5)
+                # Rysujemy drugą część linii (od środka do końca) proporcjonalnie do progress
+                t = (self.progress - 0.5) / 0.5  # t rośnie od 0 do 1 dla drugiej połowy
+                current_end_x = mid_x + (ex - mid_x) * t
+                current_end_y = mid_y + (ey - mid_y) * t
+                pygame.draw.line(target_surface, color2, (mid_x, mid_y), (current_end_x, current_end_y), 5)
+        else:
+            # Jeśli połączenie nie jest wzajemne, rysujemy linię jednokolorową (używamy koloru start_cell)
+            current_x = sx + (ex - sx) * self.progress
+            current_y = sy + (ey - sy) * self.progress
+            pygame.draw.line(target_surface, color1, (sx, sy), (current_x, current_y), 5)
+
+        if self.removal_progress > 0:
+            surface.blit(temp_surface, (0, 0))
 
         for bullet in self.bullets:
             bullet.draw(surface)
 
-
-class AnimatedBullet:
-    def __init__(self, start_cell, end_cell, speed=0.005):
-        self.start_cell = start_cell
-        self.end_cell = end_cell
-        self.progress = 0.0
-        self.speed = speed
-        self.done = False
-
-    def update(self):
-        self.progress += self.speed
-        if self.progress >= 1.0:
-            self.progress = 1.0
-            self.done = True
-
-    def draw(self, surface):
-        sx, sy = self.start_cell.x, self.start_cell.y
-        ex, ey = self.end_cell.x, self.end_cell.y
-        bx = sx + (ex - sx) * self.progress
-        by = sy + (ey - sy) * self.progress
-        pygame.draw.circle(surface, (255, 255, 255), (int(bx), int(by)), 6)

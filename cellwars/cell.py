@@ -9,9 +9,10 @@ class Cell:
         self.radius = radius
         self.color = color
         self.owner = owner  # np. "player", "enemy", "neutral"
-        self.units = 10
+        self.units = 17
         self.type = type  # np. "normal", "fort", itd.
         self.connections = []
+        self.bullets = []
         self.image_map = image_map  # słownik z obrazkami
 
     @property
