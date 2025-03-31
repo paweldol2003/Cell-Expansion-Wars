@@ -327,25 +327,35 @@ class GameScene:
 
         if self.context_menu_visible and self.context_cell:
             x, y = self.context_menu_pos
+            menu_width = 220
+            item_height = 36
+            padding = 8
+            border_radius = 8
+
             for idx, target in enumerate(self.context_cell.connections):
-                rect = pygame.Rect(x, y + idx * 40, 220, 36)
+                rect = pygame.Rect(x, y + idx * (item_height + padding), menu_width, item_height)
 
-                # Tło z przezroczystością
-                button_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-                button_surf.fill((0, 0, 0, 0))  # przezroczyste tło
+                # Tło z lekkim cieniem
+                shadow_rect = rect.copy()
+                shadow_rect.move_ip(2, 2)
+                pygame.draw.rect(screen, (0, 0, 0, 100), shadow_rect, border_radius=border_radius)
 
-                # Zaokrąglony przycisk (ciemnoszary, półprzezroczysty)
-                pygame.draw.rect(button_surf, (30, 30, 30, 220), button_surf.get_rect(), border_radius=8)
+                # Główne tło
+                pygame.draw.rect(screen, (40, 40, 40), rect, border_radius=border_radius)
 
-                # Obrys (jaśniejszy szary)
-                pygame.draw.rect(button_surf, (100, 100, 100, 255), button_surf.get_rect(), width=1, border_radius=8)
+                # Obrys
+                pygame.draw.rect(screen, (120, 120, 120), rect, width=1, border_radius=border_radius)
 
-                # Tekst
-                text = self.context_font.render(f"🗑 Usuń połączenie z ({target.x}, {target.y})", True, (240, 240, 240))
-                button_surf.blit(text, (10, 7))
+                # Numerowana etykieta
+                text_label = f"{idx+1}. Usuń połączenie z ({target.x}, {target.y})"
+                text_surface = self.context_font.render(text_label, True, (240, 240, 240))
 
-                # Narysuj gotowy przycisk na ekran
-                screen.blit(button_surf, rect.topleft)
+                # Wyśrodkowanie w pionie
+                text_rect = text_surface.get_rect()
+                text_rect.center = rect.center
+
+                screen.blit(text_surface, text_rect)
+
 
         if self.suggestion:
             src, tgt = self.suggestion
@@ -354,7 +364,7 @@ class GameScene:
             pygame.draw.line(screen, (0, 255, 255), src_pos, tgt_pos, 3)
 
             # Tekst
-            tip_text = self.font.render("💡 Sugerowany ruch", True, (0, 255, 255))
+            tip_text = self.font.render("Sugerowany ruch", True, (0, 255, 255))
             screen.blit(tip_text, (20, 90))
 
         
