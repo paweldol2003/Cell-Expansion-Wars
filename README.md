@@ -1,5 +1,6 @@
 # Cell Expansion Wars
-#Paweł Dolak 193582
+Paweł Dolak 193582
+https://github.com/paweldol2003/Cell-Expansion-Wars.git
 
 **Cell Expansion Wars** to strategiczna gra czasu rzeczywistego inspirowana mechaniką ekspansji komórek. Gracz kontroluje komórki, wysyła jednostki do zdobywania innych, a także musi mierzyć się z wrogiem sterowanym przez AI. Celem gry jest przejęcie wszystkich komórek przeciwnika.
 
