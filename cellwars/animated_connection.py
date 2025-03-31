@@ -41,12 +41,15 @@ class AnimatedConnection:
 
             for bullet in self.bullets:
                 bullet.update(mutual)
-                # if mutual : napisz mi kod który sprawi ze kula dotrze do celu w połowie drogi
                 if bullet.done and not mutual:
                     if self.start_cell.owner == self.end_cell.owner:
                         self.end_cell.units += 1
+                        if self.start_cell.type == "defence":
+                            self.end_cell.units += 1
                     else:
                         self.end_cell.units -= 1
+                        if self.start_cell.type == "attack":
+                            self.end_cell.units -= 1
                         if self.end_cell.units < 0:
                             self.end_cell.owner = self.start_cell.owner
                             self.end_cell.units = abs(self.end_cell.units)
@@ -55,14 +58,17 @@ class AnimatedConnection:
         self.bullets = [b for b in self.bullets if not b.done]
 
         # Animacja zanikania
-        if self.mark_for_removal and self.done and not self.bullets:
+        if self.mark_for_removal and self.done:
             self.removal_progress += 0.05
             if self.removal_progress >= 1.0:
                 self.to_destroy = True
 
-    def draw(self, surface):
-        sx, sy = self.start_cell.x, self.start_cell.y
-        ex, ey = self.end_cell.x, self.end_cell.y
+    def draw(self, surface, offset=(0, 0)):
+        ox, oy = offset
+        sx = self.start_cell.x + ox
+        sy = self.start_cell.y + oy
+        ex = self.end_cell.x + ox
+        ey = self.end_cell.y + oy
         mid_x = (sx + ex) / 2
         mid_y = (sy + ey) / 2
 
@@ -70,34 +76,30 @@ class AnimatedConnection:
         color1 = (colors.GREEN + (alpha,)) if self.start_cell.owner == "player" else (colors.RED + (alpha,))
         color2 = (colors.GREEN + (alpha,)) if self.end_cell.owner == "player" else (colors.RED + (alpha,))
 
-        
-
         if self.removal_progress > 0:
             temp_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             target_surface = temp_surface
         else:
             target_surface = surface
-        # Obliczamy mutual dynamicznie
+            color1 = colors.GREEN if self.start_cell.owner == "player" else colors.RED
+            color2 = colors.GREEN if self.end_cell.owner == "player" else colors.RED
+
+
         mutual = (self.end_cell in self.start_cell.connections and 
                 self.start_cell in self.end_cell.connections)
         if mutual:
-            # Jeśli połączenie jest wzajemne, rysujemy linię dwukolorową
             if self.progress <= 0.5:
-                # Rysujemy pierwszą część linii (od startu do środka)
-                t = self.progress / 0.5  # t rośnie od 0 do 1
+                t = self.progress / 0.5
                 current_mid_x = sx + (mid_x - sx) * t
                 current_mid_y = sy + (mid_y - sy) * t
                 pygame.draw.line(target_surface, color1, (sx, sy), (current_mid_x, current_mid_y), 5)
             else:
-                # Pierwsza połowa jest już w pełni narysowana
                 pygame.draw.line(target_surface, color1, (sx, sy), (mid_x, mid_y), 5)
-                # Rysujemy drugą część linii (od środka do końca) proporcjonalnie do progress
-                t = (self.progress - 0.5) / 0.5  # t rośnie od 0 do 1 dla drugiej połowy
+                t = (self.progress - 0.5) / 0.5
                 current_end_x = mid_x + (ex - mid_x) * t
                 current_end_y = mid_y + (ey - mid_y) * t
                 pygame.draw.line(target_surface, color2, (mid_x, mid_y), (current_end_x, current_end_y), 5)
         else:
-            # Jeśli połączenie nie jest wzajemne, rysujemy linię jednokolorową (używamy koloru start_cell)
             current_x = sx + (ex - sx) * self.progress
             current_y = sy + (ey - sy) * self.progress
             pygame.draw.line(target_surface, color1, (sx, sy), (current_x, current_y), 5)
@@ -106,5 +108,5 @@ class AnimatedConnection:
             surface.blit(temp_surface, (0, 0))
 
         for bullet in self.bullets:
-            bullet.draw(surface)
+            bullet.draw(surface, offset)
 

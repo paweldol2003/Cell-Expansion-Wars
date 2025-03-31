@@ -38,7 +38,8 @@ class Cell:
         text = font.render(str(self.units), True, colors.WHITE)
         WINDOW.blit(text, (self.x - text.get_width() // 2, self.y - text.get_height() // 2))
 
-    def is_in_area(self, pos):
-        dx = self.x - pos[0]
-        dy = self.y - pos[1]
+    def is_in_area(self, pos, offset=(0, 0)): 
+        ox, oy = offset 
+        dx = (self.x + ox) - pos[0] 
+        dy = (self.y + oy) - pos[1] 
         return dx * dx + dy * dy <= self.radius * self.radius

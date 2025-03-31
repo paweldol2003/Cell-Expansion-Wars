@@ -8,6 +8,7 @@ class MenuScene:
         self.buttons = [
             {"text": "Poziom 1", "stage": "stage_1", "rect": pygame.Rect(300, 200, 200, 50)},
             {"text": "Poziom 2", "stage": "stage_2", "rect": pygame.Rect(300, 300, 200, 50)},
+            {"text": "Poziom 3", "stage": "stage_3", "rect": pygame.Rect(300, 400, 200, 50)},
         ]
         self.font = pygame.font.SysFont(None, 36)
 

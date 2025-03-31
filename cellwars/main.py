@@ -35,12 +35,10 @@ def main():
                 
                 if result == "stage_1":
                     cells = stages.get_stage_1(images)
-                    print("Liczba komórek w etapie:", len(cells))
-                    for cell in cells:
-                        print("Cell:", cell.x, cell.y, cell.image)
-
                 elif result == "stage_2":
                     cells = stages.get_stage_2(images)
+                elif result == "stage_3":
+                    cells = stages.get_stage_3(images)
                 else:
                     cells = []
 
