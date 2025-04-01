@@ -1,11 +1,7 @@
 #main.py
 import pygame
-import sys
 import stages
-import cell
 from scenes import GameScene, MenuScene
-
-import math
 from assets.resources import load_images
 
 # Inicjalizacja Pygame

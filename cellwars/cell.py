@@ -10,7 +10,7 @@ class Cell:
         self.color = color
         self.owner = owner  # np. "player", "enemy", "neutral"
         self.units = 17
-        self.type = type  # np. "normal", "fort", itd.
+        self.type = type  # np. "normal", "attack", "hex", "defence"
         self.connections = []
         self.bullets = []
         self.image_map = image_map  # słownik z obrazkami
