@@ -12,15 +12,14 @@ class MenuScene:
         ]
         self.font = pygame.font.SysFont(None, 36)
 
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for btn in self.buttons:
-                    if btn["rect"].collidepoint(event.pos):
-                        return btn["stage"]
+    def handle_event(self, event):
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for btn in self.buttons:
+                if btn["rect"].collidepoint(event.pos):
+                    return btn["stage"]
         return None
 
     def update(self):
