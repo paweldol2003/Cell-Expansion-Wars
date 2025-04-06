@@ -36,6 +36,19 @@ https://github.com/paweldol2003/Cell-Expansion-Wars.git
 
 środowisko Conda – plik `environment.yml` zawiera zależności
 
+##Spełnione założenia
+
+QGraphicsScene – implementacja sceny gry (1 pkt)
+Dziedziczenie po QGraphicsItem – jednostki jako osobne obiekty (1 pkt)
+Interaktywność jednostek – klikalność, przeciąganie, menu kontekstowe (3 pkt)
+Sterowanie jednostkami – ruch na siatce planszy (1 pkt)
+Zaciąganie grafik jednostek z pliku .rc (1 pkt)
+Podświetlanie możliwych ruchów i ataków w zależności od mnożnika (2 pkt)
+System walki uwzględniający poziomy, mnożenie jednostek  (2 pkt)
+Mechanizm tur i licznik czasu na wykonanie ruchu (zegar rundowy) (2 pkt)
+System podpowiedzi strategicznych oparty na AI (np. najlepszy ruch w turze) (1 pkt)
+Logger wyświetlający komunikaty na konsoli i w interfejsie QTextEdit z rotującym logowaniem (1 pkt)
+
 ## Uruchomienie
 
 ```bash
