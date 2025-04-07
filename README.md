@@ -30,6 +30,8 @@ https://github.com/paweldol2003/Cell-Expansion-Wars.git
 - **LPM** – wybór komórki i wysyłanie jednostek (przeciąganie i łączenie poprzez kliknięcia myszą)
 - **PPM na komórce** – otwarcie menu kontekstowego
 - **PPM poza komórką + przeciąganie** – przesuwanie planszy
+- **SPACJA** – włączenie/wyłączenie podpowiedzi
+
 
 
 ## Wymagania
@@ -49,6 +51,13 @@ Mechanizm tur i licznik czasu na wykonanie ruchu (zegar rundowy) (2 pkt)
 System podpowiedzi strategicznych oparty na AI (np. najlepszy ruch w turze) (1 pkt)
 Logger wyświetlający komunikaty na konsoli i w interfejsie QTextEdit z rotującym logowaniem (1 pkt)
 
+##Spełnione założenia z laboratorium Config & history
+
+Tryb gry: 1 gracz / 2 graczy lokalnie / gra sieciowa (grupa radio buttons) – 0.5 pkt
+Adres IP i port (line edit z maską, walidacją i podpowiedzią) – 0.5 pkt
+Zapis i odczyt historii gry  (XML) – 1 pkt
+Zapis i odczyt historii  gry (JSON) – 1 pkt
+
 ## Uruchomienie
 
 ```bash
@@ -66,10 +75,12 @@ python main.py
 - `menu_scene.py` – ekran menu
 - `logger.py` – system logowania z rotacją
 - `resources.py` zawiera zakodowane grafiki .png
+- `suggestion_handler.py` - przeniesiony system sugestii
+- `game_saver.py`,`game_loader.py` - obsługa zapisu
+
 
 ## Plany rozwoju
 
-- Zapis/odczyt stanu gry
 - Rozbudowany system AI (priorytety, taktyki)
 - Tryb wieloetapowy z progresją trudności
 - UI do edycji map i połączeń
