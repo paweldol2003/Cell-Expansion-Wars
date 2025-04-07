@@ -33,12 +33,15 @@ class GameScene:
         self.suggestion_handler = SuggestionHandler()
 
 
-        self.buttons = [
-            {"text": "PAUSE", "rect": pygame.Rect(700, 20, 80, 30)},
+        self.pause_menu_buttons = [
             {"text": "SAVE", "rect": pygame.Rect(600, 20, 80, 30)},
             {"text": "MENU", "rect": pygame.Rect(500, 20, 80, 30)},
             {"text": "RESTART", "rect": pygame.Rect(400, 20, 80, 30)},
         ]
+
+        self.main_button = {"text": "PAUSE", "rect": pygame.Rect(700, 20, 80, 30)}
+        self.show_pause_menu = False
+
 
         self.font = pygame.font.SysFont(None, 30)
         self.context_font = pygame.font.SysFont("consolas", 10)
@@ -111,30 +114,32 @@ class GameScene:
                             self.context_menu_visible = False
                             return
                         
-                for btn in self.buttons:
-                    if btn["rect"].collidepoint(event.pos) and btn["text"] == "MENU":
-                        return "menu"
-                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "RESTART":
-                        self.logger.info("Restart gry")
-                        return "restart"
-                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "PAUSE":
-                        #tutaj będzie pauza
-                        self.pause = not self.pause
-                        if self.pause:
-                            self.logger.info("Gra wznowiona")
-                        else:
-                            self.logger.info("Gra wstrzymana") 
-                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "SAVE":
-                        #cos jeszcze???
-                        snapshot = {
-                            "tick": self.timer,
-                            "save_decision": "player",
-                            "turn": self.current_player(),
-                            "cells": self.cells,
-                        }
-                        self.history.append(snapshot)
-                        GameSaver(self.history)
-                        self.logger.info("Zapisano grę")
+                                # Obsługa głównego przycisku PAUSE
+                if self.main_button["rect"].collidepoint(event.pos):
+                    self.pause = not self.pause
+                    self.show_pause_menu = not self.show_pause_menu
+                    self.logger.info("Gra wznowiona" if self.pause else "Gra wstrzymana")
+
+                # Obsługa przycisków menu pauzy
+                if self.show_pause_menu:
+                    for btn in self.pause_menu_buttons:
+                        if btn["rect"].collidepoint(event.pos):
+                            if btn["text"] == "MENU":
+                                return "menu"
+                            elif btn["text"] == "RESTART":
+                                self.logger.info("Restart gry")
+                                return "restart"
+                            elif btn["text"] == "SAVE":
+                                snapshot = {
+                                    "tick": self.timer,
+                                    "save_decision": "player",
+                                    "turn": self.current_player(),
+                                    "cells": self.cells,
+                                }
+                                self.history.append(snapshot)
+                                GameSaver(self.history)
+                                self.logger.info("Zapisano grę")
+
 
                 if not self.player_turn or self.game_over:
                     return
@@ -262,6 +267,18 @@ class GameScene:
 
 
 
+    def draw_button(self, screen, btn):
+        mouse_over = btn["rect"].collidepoint(self.mouse_pos)
+        base_color = (70, 70, 200)
+        hover_color = (100, 100, 255)
+        color = hover_color if mouse_over else base_color
+
+        pygame.draw.rect(screen, color, btn["rect"], border_radius=6)
+        pygame.draw.rect(screen, (255, 255, 255), btn["rect"], 2, border_radius=6)
+
+        text = self.font.render(btn["text"], True, (255, 255, 255))
+        text_rect = text.get_rect(center=btn["rect"].center)
+        screen.blit(text, text_rect)
 
     def draw(self, screen: pygame.Surface):
         screen.fill(colors.GRAY)
@@ -287,10 +304,14 @@ class GameScene:
             cell.x, cell.y = original_x, original_y
 
         # Rysowanie przycisków
-        for btn in self.buttons:
-            pygame.draw.rect(screen, (70, 70, 200), btn["rect"])
-            text = self.font.render(btn["text"], True, (255, 255, 255))
-            screen.blit(text, (btn["rect"].x + 10, btn["rect"].y + 5))
+        # Rysowanie głównego przycisku PAUSE
+        self.draw_button(screen, self.main_button)
+
+        # Rysowanie przycisków menu pauzy
+        if self.show_pause_menu:
+            for btn in self.pause_menu_buttons:
+                self.draw_button(screen, btn)
+
 
 
         # Pasek czasu rundy
@@ -405,5 +426,8 @@ class GameScene:
             rendered = self.font_log.render(line, True, (255, 255, 0))
             screen.blit(rendered, (log_x, log_y))
             log_y += 20
+
+    
+
 
 

@@ -42,7 +42,7 @@ class AnimatedConnection:
             for bullet in self.bullets:
                 bullet.update(mutual)
                 if bullet.done and not mutual:
-                    if self.start_cell.owner == self.end_cell.owner:
+                    if self.start_cell.owner == self.end_cell.owner and self.start_cell.owner_id == self.end_cell.owner_id:
                         self.end_cell.units += 1
                         if self.start_cell.type == "defence":
                             self.end_cell.units += 1
