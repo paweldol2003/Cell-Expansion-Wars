@@ -3,7 +3,7 @@ import pygame
 import math
 
 class AnimatedBullet:
-    def __init__(self, start_cell, end_cell, speed=2):  # speed w pikselach/klatkę
+    def __init__(self, start_cell, end_cell, speed=1):  # speed w pikselach/klatkę
         self.start_cell = start_cell
         self.end_cell = end_cell
         self.speed = speed  # odległość w pikselach na klatkę

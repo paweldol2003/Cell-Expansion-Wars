@@ -3,22 +3,26 @@ import pygame
 import colors
 
 class Cell:
-    def __init__(self, x, y, radius, color, owner, index, type, image_map):
+    def __init__(self, id, x, y, radius, color, owner, owner_id, type, image_map):
+        self.id = id
         self.x = x
         self.y = y
         self.radius = radius
         self.color = color
-        self.index = index
+        self.owner_id = owner_id 
         self.owner = owner  # np. "player", "enemy", "neutral"
         self.units = 17
         self.type = type  # np. "normal", "attack", "hex", "defence"
         self.connections = []
         self.bullets = []
         self.image_map = image_map  # słownik z obrazkami
+        
+    def __repr__(self):
+        return f"<Cell id={self.id} owner={self.owner} type={self.type} pos=({self.x},{self.y})>"
 
     @property
     def image(self):
-        key = f"ID_UNIT_{self.owner.upper()}_{self.type.upper()}"
+        key = f"ID_UNIT_{self.owner.upper()}_{self.owner_id}_{self.type.upper()}"
         raw_image = self.image_map.get(key)
         if raw_image:
             size = self.radius * 2

@@ -5,7 +5,7 @@ from animated_bullet import AnimatedBullet
 
 
 class AnimatedConnection:
-    def __init__(self, start_cell, end_cell, speed=0.01):
+    def __init__(self, start_cell, end_cell, speed=0.005):
         self.start_cell = start_cell
         self.end_cell = end_cell
         self.progress = 0.0
@@ -50,10 +50,13 @@ class AnimatedConnection:
                         self.end_cell.units -= 1
                         if self.start_cell.type == "attack":
                             self.end_cell.units -= 1
-                        if self.end_cell.units < 0:
+                            
+                        if self.end_cell.units < 0: # zmiania właściciela
                             self.end_cell.owner = self.start_cell.owner
+                            self.end_cell.owner_id = self.start_cell.owner_id
                             self.end_cell.units = abs(self.end_cell.units)
-
+                            self.end_cell.color = self.start_cell.color
+                            self.end_cell.connections.clear()  
         # Usuń zakończone kule
         self.bullets = [b for b in self.bullets if not b.done]
 
@@ -73,20 +76,21 @@ class AnimatedConnection:
         mid_y = (sy + ey) / 2
 
         alpha = int(255 * (1 - self.removal_progress))
-        color1 = (colors.GREEN + (alpha,)) if self.start_cell.owner == "player" else (colors.RED + (alpha,))
-        color2 = (colors.GREEN + (alpha,)) if self.end_cell.owner == "player" else (colors.RED + (alpha,))
+
+        color1 = self.start_cell.color + (alpha,)
+        color2 = self.end_cell.color + (alpha,)
 
         if self.removal_progress > 0:
             temp_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             target_surface = temp_surface
         else:
             target_surface = surface
-            color1 = colors.GREEN if self.start_cell.owner == "player" else colors.RED
-            color2 = colors.GREEN if self.end_cell.owner == "player" else colors.RED
-
+            color1 = self.start_cell.color
+            color2 = self.end_cell.color
 
         mutual = (self.end_cell in self.start_cell.connections and 
                 self.start_cell in self.end_cell.connections)
+
         if mutual:
             if self.progress <= 0.5:
                 t = self.progress / 0.5
@@ -109,4 +113,5 @@ class AnimatedConnection:
 
         for bullet in self.bullets:
             bullet.draw(surface, offset)
+
 

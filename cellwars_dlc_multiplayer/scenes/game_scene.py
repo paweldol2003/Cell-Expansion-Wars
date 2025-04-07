@@ -1,11 +1,13 @@
 # game_scene.py
 import pygame
 import sys
-from cell import Cell
 from animated_connection import AnimatedConnection
+from suggestion_handler import SuggestionHandler
+
 import colors
 from enemyAI import EnemyAI
 from logger import setup_logger
+from game_saver import GameSaver
 
 
 class GameScene:
@@ -16,82 +18,71 @@ class GameScene:
         self.dragging = False
         self.mouse_pos = (0, 0)
         self.timer = 0
+        self.round_duration = 4 * 60  # 4 sekund w klatkach (zakładając 60 FPS)
+        self.player_turn = True  # True = gracz, False = AI
+        self.turn_order = self.compute_turn_order()
+        self.current_turn_index = 0
+
         self.animating_connections = []
         self.animated_bullets = []
-        self.potential_connections = []
         self.context_cell = None  # komórka, na której otwarto menu
         self.context_menu_pos = None  # gdzie wyświetlić menu
         self.context_menu_visible = False
 
         self.enemy_ai = EnemyAI()
-        self.suggestion = None  # (source_cell, target_cell)
+        self.suggestion_handler = SuggestionHandler()
+
 
         self.buttons = [
-            {"text": "MENU", "rect": pygame.Rect(700, 20, 80, 30)},
+            {"text": "PAUSE", "rect": pygame.Rect(700, 20, 80, 30)},
+            {"text": "SAVE", "rect": pygame.Rect(600, 20, 80, 30)},
+            {"text": "MENU", "rect": pygame.Rect(500, 20, 80, 30)},
+            {"text": "RESTART", "rect": pygame.Rect(400, 20, 80, 30)},
         ]
+
         self.font = pygame.font.SysFont(None, 30)
         self.context_font = pygame.font.SysFont("consolas", 10)
         self.logger, self.log_handler = setup_logger()
-        self.font_log = pygame.font.SysFont("consolas", 16)
+        self.font_log = pygame.font.SysFont("consolas", 10)
+
         # Przesuwanie
         self.offset = [0, 0]         # globalne przesunięcie planszy
         self.is_panning = False      # flaga aktywnego przesuwania
         self.pan_start = (0, 0)
-        self.selection_timer = 0  # do animacji pulsowania
-
-        # System rund
-        self.round_timer = 0
-        self.round_duration = 4 * 60  # 4 sekund w klatkach (zakładając 60 FPS)
-        self.player_turn = True  # True = gracz, False = AI
 
         # Stan gry
         self.game_over = False
-        self.player_won = False
+        self.pause = False
+        self.player_won = False #do zmiany
+        self.winner = None
 
-    def generate_suggestion(self):
-        player_cells = [c for c in self.cells if c.owner == 'player' and c.units > 5]
-        potential_targets = [c for c in self.cells if c.owner != 'player']
+        self.history = [] 
 
-        best_score = float('-inf')
-        best_move = None
+    def compute_turn_order(self):
+        return sorted(set(
+            (cell.owner, cell.owner_id)
+            for cell in self.cells
+            if cell.owner != "neutral" and cell.owner_id is not None
+        ), key=lambda x: (x[0], x[1]))
 
-        for source in player_cells:
-            max_conns = 3 if source.type == "hex" else 2
-            if len(source.connections) >= max_conns:
-                continue
-
-            for target in potential_targets:
-                if target in source.connections:
-                    continue
-
-                # Prosta heurystyka: opłaca się atakować słabych i bliskich
-                distance = ((source.x - target.x)**2 + (source.y - target.y)**2)**0.5
-                score = (10 - target.units) - (distance / 100)
-
-                if source.type == "attack":
-                    score += 5
-                if target.owner == "enemy":
-                    score += 3
-
-                if score > best_score:
-                    best_score = score
-                    best_move = (source, target)
-
-        self.suggestion = best_move
-
+    def current_player(self):
+        return self.turn_order[self.current_turn_index]
 
     def handle_events(self, events):
         for event in events:
+            current_owner, current_owner_id = self.current_player()
+            if current_owner != "player":
+                return
+
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                
-                self.suggestion = None
                 if event.button == 3:  # PPM
                     for cell in self.cells:
-                        if cell.is_in_area(event.pos, offset=self.offset):  # dodaj offset!
+                        if cell.is_in_area(event.pos, self.offset) and cell.owner == "player" and cell.owner_id == current_owner_id:
+
                             self.context_cell = cell
                             self.context_menu_pos = event.pos
                             self.context_menu_visible = True
@@ -119,17 +110,37 @@ class GameScene:
 
                             self.context_menu_visible = False
                             return
-
-
+                        
                 for btn in self.buttons:
-                    if btn["rect"].collidepoint(event.pos):
-                        return 1
+                    if btn["rect"].collidepoint(event.pos) and btn["text"] == "MENU":
+                        return "menu"
+                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "RESTART":
+                        self.logger.info("Restart gry")
+                        return "restart"
+                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "PAUSE":
+                        #tutaj będzie pauza
+                        self.pause = not self.pause
+                        if self.pause:
+                            self.logger.info("Gra wznowiona")
+                        else:
+                            self.logger.info("Gra wstrzymana") 
+                    elif btn["rect"].collidepoint(event.pos) and btn["text"] == "SAVE":
+                        #cos jeszcze???
+                        snapshot = {
+                            "tick": self.timer,
+                            "save_decision": "player",
+                            "turn": self.current_player(),
+                            "cells": self.cells,
+                        }
+                        self.history.append(snapshot)
+                        GameSaver(self.history)
+                        self.logger.info("Zapisano grę")
 
                 if not self.player_turn or self.game_over:
                     return
 
                 for cell in self.cells:
-                    if cell.is_in_area(event.pos, self.offset) and cell.owner == 'player':
+                    if cell.is_in_area(event.pos, self.offset) and cell.owner == 'player'and cell.owner_id == current_owner_id:
                         self.selected = cell
                         self.dragging = True
                         self.logger.info("Zaznaczono komorke")
@@ -182,49 +193,74 @@ class GameScene:
                         self.selected = None
                 self.dragging = False
 
+            elif event.type == pygame.KEYDOWN: # włącz/wyłącz sugestie
+                if event.key == pygame.K_SPACE:
+                    self.suggestion_handler.toggle()
+
+
     def update(self):
         if self.game_over:
             return
 
         self.timer += 1
-        self.round_timer += 1
-        self.selection_timer += 1
+
+        # Zmiana tury co round_duration
+        if self.timer % self.round_duration == 0:
+            self.current_turn_index = (self.current_turn_index + 1) % len(self.turn_order)
+
+        current_owner, current_owner_id = self.current_player()
+
+        # Generowanie sugestii dla gracza
+        if current_owner == "player" and self.timer % self.round_duration == 1:
+            self.suggestion_handler.generate([
+                c for c in self.cells if c.owner == "player" and c.owner_id == current_owner_id
+            ])
+
+        # AI ruch
+        if current_owner == "enemy":
+            self.enemy_ai.update(
+                owner_id=current_owner_id,
+                cells=self.cells,
+                animating_connections=self.animating_connections
+            )
 
 
-        # Sprawdź warunek zwycięstwa
-        if not any(cell.owner == 'enemy' for cell in self.cells):
-            self.game_over = True
-            self.player_won = True
-            return
-
-        # Sprawdź warunek przegranej
-        if not any(cell.owner == 'player' for cell in self.cells):
-            self.game_over = True
-            self.player_won = False
-            return
-        if self.round_timer == 1 and self.player_turn:
-            self.generate_suggestion()
-
-        # Zmiana rundy co 4 sekundy
-        if self.round_timer >= self.round_duration:
-            self.player_turn = not self.player_turn
-            self.round_timer = 0
-
-        if not self.player_turn:
-            self.enemy_ai.update(self.cells, self.animating_connections)
-
-        if self.timer >= 60:
+        # Przyrost jednostek co sekundę
+        if self.timer % 60 == 0:
             for cell in self.cells:
-                if cell.owner != 'neutral':
+                if cell.owner != "neutral":
                     cell.units += 1
-            self.timer = 0
 
+        # Historia gry
+        snapshot = {
+            "tick": self.timer,
+            "save_decision": "system",
+            "turn": self.current_player(),
+            "cells": self.cells,
+        }
+        self.history.append(snapshot)
+
+        # Strzelanie co 50 klatek
+        shoot = (self.timer % 50 == 0)
         for anim in self.animating_connections:
-            anim.update(shoot=(self.timer == 50))
+            anim.update(shoot=shoot)
 
         self.animating_connections = [
             anim for anim in self.animating_connections if not getattr(anim, "to_destroy", False)
         ]
+
+        # Warunki końca gry
+        active_players = {(c.owner, c.owner_id) for c in self.cells if c.owner != "neutral"}
+
+        if len(active_players) <= 1:
+            self.game_over = True
+            winner = next(iter(active_players)) if active_players else None
+
+            winner = next(iter(active_players)) if active_players else None
+            self.player_won = (winner and winner[0] == "player")
+
+
+
 
 
     def draw(self, screen: pygame.Surface):
@@ -236,7 +272,7 @@ class GameScene:
 
         # Rysowanie linii przeciągania (jeśli zaznaczono komórkę)
         if self.dragging and self.selected:
-            pygame.draw.line(screen, colors.GREEN,
+            pygame.draw.line(screen, self.selected.color,
                             (self.selected.x + self.offset[0], self.selected.y + self.offset[1]),
                             (self.mouse_pos[0], self.mouse_pos[1]), 2)
 
@@ -259,7 +295,7 @@ class GameScene:
 
         # Pasek czasu rundy
         pygame.draw.rect(screen, colors.BLACK, (19, 59, 202, 12), 3)  # ramka
-        bar_width = int((self.round_timer / self.round_duration) * 200)
+        bar_width = int((self.timer % self.round_duration) / self.round_duration * 200)
         pygame.draw.rect(screen, (200, 200, 200), (20, 60, 200, 10))  # tło paska
         if self.player_turn:
             pygame.draw.rect(screen, colors.GREEN, (20, 60, bar_width, 10))
@@ -269,11 +305,17 @@ class GameScene:
         # Informacja o stanie gry
         if self.game_over:
             pygame.draw.rect(screen, colors.BLACK, (19, 59, 202, 12), 3)
-            result_text = "YOU WON" if self.player_won else "YOU LOST"
+            if self.winner:
+                who, idx = self.winner
+                result_text = f"{who.capitalize()} {idx} wins!"
+            else:
+                result_text = "DRAW"
+
             info = self.font.render(result_text, True, colors.WHITE)
             screen.blit(info, (400, 60))
         else:
-            status_text = "Your turn" if self.player_turn else "AI turn"
+            owner, owner_id = self.current_player()
+            status_text = f"{owner.capitalize()} {owner_id}'s turn"
             round_info = self.font.render(status_text, True, colors.WHITE)
             screen.blit(round_info, (20, 20))
         # Wyświetlanie logów w rogu ekranu
@@ -291,11 +333,11 @@ class GameScene:
 
                     # Animacja pulsującego pierścienia
                     if self.selected.owner == cell.owner and self.selected.type == "defence" or self.selected.owner != cell.owner and self.selected.type == "attack":
-                        pulse_radius = cell.radius + 4 + (self.selection_timer % 50) // 3
-                        alpha = max(0, 255 - (self.selection_timer % 50) * 4)
+                        pulse_radius = cell.radius + 4 + (self.timer % 50) // 3
+                        alpha = max(0, 255 - (self.timer % 50) * 4)
                     else:
-                        pulse_radius = cell.radius + 4 + (self.selection_timer % 100) // 3
-                        alpha = max(0, 255 - (self.selection_timer % 100) * 4)
+                        pulse_radius = cell.radius + 4 + (self.timer % 100) // 3
+                        alpha = max(0, 255 - (self.timer % 100) * 4)
                     ring_surface = pygame.Surface((pulse_radius * 2 + 4, pulse_radius * 2 + 4), pygame.SRCALPHA)
                     pygame.draw.circle(
                         ring_surface,
@@ -306,17 +348,11 @@ class GameScene:
                     )
 
                     screen.blit(ring_surface, (cx - pulse_radius - 2, cy - pulse_radius - 2))
-                    pulse_radius = cell.radius + 4 + (self.selection_timer % 100) // 3
-                    alpha = max(0, 255 - (self.selection_timer % 100) * 4)
+                    pulse_radius = cell.radius + 4 + (self.timer % 100) // 3
+                    alpha = max(0, 255 - (self.timer % 100) * 4)
 
                     ring_surface = pygame.Surface((pulse_radius * 2 + 4, pulse_radius * 2 + 4), pygame.SRCALPHA)
-                    pygame.draw.circle(
-                        ring_surface,
-                        (255, 255, 0, alpha),
-                        (pulse_radius + 2, pulse_radius + 2),
-                        pulse_radius,
-                        3
-                    )
+                    pygame.draw.circle(ring_surface,(255, 255, 0, alpha),(pulse_radius + 2, pulse_radius + 2),pulse_radius,3)
 
                     screen.blit(ring_surface, (cx - pulse_radius - 2, cy - pulse_radius - 2))
 
@@ -356,18 +392,14 @@ class GameScene:
 
                 screen.blit(text_surface, text_rect)
 
-
-        if self.suggestion:
-            src, tgt = self.suggestion
+        if self.suggestion_handler.show and self.suggestion_handler.suggestion:
+            src, tgt = self.suggestion_handler.suggestion
             src_pos = (src.x + self.offset[0], src.y + self.offset[1])
             tgt_pos = (tgt.x + self.offset[0], tgt.y + self.offset[1])
             pygame.draw.line(screen, (0, 255, 255), src_pos, tgt_pos, 3)
 
-            # Tekst
             tip_text = self.font.render("Sugerowany ruch", True, (0, 255, 255))
             screen.blit(tip_text, (20, 90))
-
-        
 
         for line in log_lines:
             rendered = self.font_log.render(line, True, (255, 255, 0))

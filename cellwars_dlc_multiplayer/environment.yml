@@ -6,3 +6,6 @@ dependencies:
   - pip
   - pip:
       - pygame==2.6.1
+      - pygame_gui
+      - pymongo
+      - pillow  # obsługa obrazów
