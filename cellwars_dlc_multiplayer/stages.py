@@ -76,7 +76,7 @@ def get_stage_5(images):
 
         # Wrogowie
         Cell(1, 700, 100, r, colors.RED,   "enemy",  1, "normal",  image_map=images),
-        Cell(2, 700, 500, r, colors.BLUE,  "enemy",  2, "normal",  image_map=images),
+        Cell(2, 700, 500, r, colors.ORANGE,  "enemy",  2, "normal",  image_map=images),
 
         # Neutralne „wieże”
         Cell(3, 400, 100, r, colors.GRAY, "neutral", 1, "defence", image_map=images),
@@ -95,7 +95,7 @@ def get_stage_6(images):
         Cell(1, 700, 550, r, colors.RED,   "enemy",  1, "normal",  image_map=images),
 
         # AI 2
-        Cell(2, 700,  50, r, colors.PINK,  "enemy",  2, "normal",  image_map=images),
+        Cell(2, 700,  50, r, colors.ORANGE,  "enemy",  2, "normal",  image_map=images),
 
         # Neutralne punkty kontrolne
         *[
@@ -121,8 +121,8 @@ def get_stage_3_multi(images):
         Cell(1, 150, 350, r, colors.GREEN, "player", 1, "attack",  image_map=images),
 
         # Gracz 2 / AI
-        Cell(2, 700, 100, r, colors.PINK,  "player", 2, "normal",  image_map=images),
-        Cell(3, 650, 250, r, colors.PINK,  "player", 2, "attack",  image_map=images),
+        Cell(2, 700, 100, r, colors.ORANGE,  "player", 2, "normal",  image_map=images),
+        Cell(3, 650, 250, r, colors.ORANGE,  "player", 2, "attack",  image_map=images),
 
         # Neutralne
         Cell(4, 400, 300, r, colors.GRAY, "neutral", 1, "hex",     image_map=images),

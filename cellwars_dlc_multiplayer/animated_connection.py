@@ -5,58 +5,55 @@ from animated_bullet import AnimatedBullet
 
 
 class AnimatedConnection:
-    def __init__(self, start_cell, end_cell, speed=0.005):
-        self.start_cell = start_cell
-        self.end_cell = end_cell
+    def __init__(self, attacking_cell, attacked_cell, speed=0.005):
+        self.attacking_cell = attacking_cell
+        self.attacked_cell = attacked_cell
         self.progress = 0.0
         self.speed = speed
         self.done = False
         self.bullets = []
-        self.bullets_to_fire = 0
-        self.mark_for_removal = False  # zainicjowane przez AI
+        self.mark_for_removal = False  
         self.removal_progress = 0.0
         self.to_destroy = False
+        self.mutual = False  # czy połączenie jest wzajemne
 
     def update(self, shoot):
-        mutual = (self.end_cell in self.start_cell.connections and 
-        self.start_cell in self.end_cell.connections)
+
+        self.mutual = (self.attacked_cell in self.attacking_cell.connections and 
+        self.attacking_cell in self.attacked_cell.connections)
+
         if not self.done:
             self.progress += self.speed
             if self.progress >= 1.0:
                 self.progress = 1.0
                 self.done = True
-                self.start_cell.connections.append(self.end_cell)
+                self.attacking_cell.connections.append(self.attacked_cell)
         else:
-            # AI-controlled strzały
-            if self.bullets_to_fire > 0:
-                self.bullets_to_fire -= 1
-                bullet = AnimatedBullet(self.start_cell, self.end_cell)
-                self.bullets.append(bullet)
 
             # shoot z timera
-            if shoot and self.start_cell.units > 0:
-                self.start_cell.units -= 1
-                bullet = AnimatedBullet(self.start_cell, self.end_cell)
+            if shoot and self.attacking_cell.units > 0:
+                self.attacking_cell.units -= 1
+                bullet = AnimatedBullet(self.attacking_cell, self.attacked_cell)
                 self.bullets.append(bullet)
 
             for bullet in self.bullets:
-                bullet.update(mutual)
-                if bullet.done and not mutual:
-                    if self.start_cell.owner == self.end_cell.owner and self.start_cell.owner_id == self.end_cell.owner_id:
-                        self.end_cell.units += 1
-                        if self.start_cell.type == "defence":
-                            self.end_cell.units += 1
+                bullet.update(self.mutual)
+                if bullet.done and not self.mutual:
+                    if self.attacking_cell.owner == self.attacked_cell.owner and self.attacking_cell.owner_id == self.attacked_cell.owner_id:
+                        self.attacked_cell.units += 1
+                        if self.attacking_cell.type == "defence":
+                            self.attacked_cell.units += 1
                     else:
-                        self.end_cell.units -= 1
-                        if self.start_cell.type == "attack":
-                            self.end_cell.units -= 1
+                        self.attacked_cell.units -= 1
+                        if self.attacking_cell.type == "attack":
+                            self.attacked_cell.units -= 1
                             
-                        if self.end_cell.units < 0: # zmiania właściciela
-                            self.end_cell.owner = self.start_cell.owner
-                            self.end_cell.owner_id = self.start_cell.owner_id
-                            self.end_cell.units = abs(self.end_cell.units)
-                            self.end_cell.color = self.start_cell.color
-                            self.end_cell.connections.clear()  
+                        if self.attacked_cell.units < 0: # zmiania właściciela
+                            self.attacked_cell.owner = self.attacking_cell.owner
+                            self.attacked_cell.owner_id = self.attacking_cell.owner_id
+                            self.attacked_cell.units = abs(self.attacked_cell.units)
+                            self.attacked_cell.color = self.attacking_cell.color
+                            self.attacked_cell.connections.clear()  
         # Usuń zakończone kule
         self.bullets = [b for b in self.bullets if not b.done]
 
@@ -65,33 +62,35 @@ class AnimatedConnection:
             self.removal_progress += 0.05
             if self.removal_progress >= 1.0:
                 self.to_destroy = True
+                if self.attacked_cell in self.attacking_cell.connections:
+                    self.attacking_cell.connections.remove(self.attacked_cell)
+                # jeśli było wzajemne, to usuń też attacked_cell → attacking_cell
+                if self.attacking_cell in self.attacked_cell.connections:
+                    self.attacked_cell.connections.remove(self.attacking_cell)
 
     def draw(self, surface, offset=(0, 0)):
         ox, oy = offset
-        sx = self.start_cell.x + ox
-        sy = self.start_cell.y + oy
-        ex = self.end_cell.x + ox
-        ey = self.end_cell.y + oy
+        sx = self.attacking_cell.x + ox
+        sy = self.attacking_cell.y + oy
+        ex = self.attacked_cell.x + ox
+        ey = self.attacked_cell.y + oy
         mid_x = (sx + ex) / 2
         mid_y = (sy + ey) / 2
 
         alpha = int(255 * (1 - self.removal_progress))
 
-        color1 = self.start_cell.color + (alpha,)
-        color2 = self.end_cell.color + (alpha,)
+        color1 = self.attacking_cell.color + (alpha,)
+        color2 = self.attacked_cell.color + (alpha,)
 
         if self.removal_progress > 0:
             temp_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             target_surface = temp_surface
         else:
             target_surface = surface
-            color1 = self.start_cell.color
-            color2 = self.end_cell.color
+            color1 = self.attacking_cell.color
+            color2 = self.attacked_cell.color
 
-        mutual = (self.end_cell in self.start_cell.connections and 
-                self.start_cell in self.end_cell.connections)
-
-        if mutual:
+        if self.mutual:
             if self.progress <= 0.5:
                 t = self.progress / 0.5
                 current_mid_x = sx + (mid_x - sx) * t
