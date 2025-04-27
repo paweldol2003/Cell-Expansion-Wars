@@ -89,20 +89,49 @@ class GameScene:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 
                 self.suggestion = None
-                if event.button == 3:  # PPM
-                    for cell in self.cells:
-                        if cell.is_in_area(event.pos, offset=self.offset):  # dodaj offset!
-                            self.context_cell = cell
-                            self.context_menu_pos = event.pos
-                            self.context_menu_visible = True
-                            break
-                    else:
-                        self.context_menu_visible = False  # kliknięto poza komórką
+
+                if not self.player_turn or self.game_over: #Tura AI
+                    return
+                
+                for cell in self.cells:
+                    if cell.is_in_area(event.pos, offset=self.offset):
+                        self.selected_cell = cell
+                        self.logger.info("Zaznaczono komórke")
+                        break
+                else:
+                    self.context_menu_visible = False
+
+                    if event.button == 1 and self.context_menu_visible and self.context_cell:  # LPM
+                        x, y = self.context_menu_pos
+                        for idx, target in enumerate(self.context_cell.connections):
+                            rect = pygame.Rect(x, y + idx * 30, 200, 30)
+                            if rect.collidepoint(event.pos):
+                                self.logger.info(f"Usunięto połączenie z ({target.x}, {target.y})")
+
+                                self.context_cell.connections.remove(target)
+
+                                # Znajdź i zaznacz połączenie do usunięcia
+                                for anim in self.animating_connections:
+                                    if anim.start_cell == self.context_cell and anim.end_cell == target:
+                                        anim.mark_for_removal = True
+
+                                self.context_menu_visible = False
+                                return
+                            
+                    if event.button == 3: # PPM
+                          # kliknięto poza komórką, zamykanie menu
+
                         self.is_panning = True
                         self.logger.info("Przesuwanie planszy")
-
                         self.pan_start = event.pos
+                
+                if event.button == 3 and self.selected_cell:  # PPM
+                    self.context_cell = cell
+                    self.context_menu_pos = event.pos
+                    self.context_menu_visible = True
                     return
+                
+
                 if event.button == 1 and self.context_menu_visible and self.context_cell:
                     x, y = self.context_menu_pos
                     for idx, target in enumerate(self.context_cell.connections):
@@ -125,8 +154,7 @@ class GameScene:
                     if btn["rect"].collidepoint(event.pos):
                         return 1
 
-                if not self.player_turn or self.game_over:
-                    return
+                
 
                 for cell in self.cells:
                     if cell.is_in_area(event.pos, self.offset) and cell.owner == 'player':
