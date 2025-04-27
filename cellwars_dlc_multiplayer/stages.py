@@ -9,7 +9,7 @@ def get_stage_1(images):
     ]
 
 def get_stage_2(images):
-    r = 40
+    r = 30  # bazowy promień
     return [
         # Gracz
         Cell(0, 100, 500, r, colors.GREEN, "player", 1, "normal", image_map=images),
@@ -17,10 +17,14 @@ def get_stage_2(images):
         # Wróg
         Cell(1, 700, 100, r, colors.RED, "enemy", 1, "normal", image_map=images),
 
-        # Neutralne
-        Cell(2, 400, 300, r, colors.GRAY, "neutral", 1,  "normal", image_map=images),
-        Cell(3, 250, 200, r, colors.GRAY, "neutral", 1,  "normal", image_map=images),
-        Cell(4, 550, 400, r, colors.GRAY, "neutral", 1,  "normal", image_map=images),
+        # Neutralne ─ każdy w innym stanie
+        Cell(2, 400, 300, r, colors.GRAY, "neutral", 1, "hex", image_map=images),
+        Cell(3, 150, 150, r, colors.GRAY, "neutral", 1, "attack", image_map=images),
+        Cell(4, 650, 450, r, colors.GRAY, "neutral", 1, "defence", image_map=images),
+        Cell(5, 400, 100, r, colors.GRAY, "neutral", 1, "normal", image_map=images),
+        Cell(6, 400, 500, r, colors.GRAY, "neutral", 1, "attack", image_map=images),
+        Cell(7, 100, 300, r, colors.GRAY, "neutral", 1, "defence", image_map=images),
+        Cell(8, 700, 300, r, colors.GRAY, "neutral", 1, "hex", image_map=images),
     ]
 
 def get_stage_3(images):
