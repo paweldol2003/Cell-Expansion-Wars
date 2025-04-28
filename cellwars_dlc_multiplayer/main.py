@@ -1,4 +1,4 @@
-#main.py
+# main.py
 import pygame
 import pygame_gui
 
@@ -38,16 +38,23 @@ def main():
             result = menu.handle_events(events)
             actual_stage = result
             if result:
+                # ─── obsługa nowych poziomów 1–6 ─────────────────
                 if result == "stage_1":
                     cells = stages.get_stage_1(images)
                 elif result == "stage_2":
                     cells = stages.get_stage_2(images)
                 elif result == "stage_3":
                     cells = stages.get_stage_3(images)
+                elif result == "stage_4":
+                    cells = stages.get_stage_4(images)
+                elif result == "stage_5":
+                    cells = stages.get_stage_5(images)
+                elif result == "stage_6":
+                    cells = stages.get_stage_6(images)
+                # ──────────────────────────────────────────────────
                 elif result == "stage_3_multi":
                     cells = stages.get_stage_3_multi(images)
                 elif result in ("load_json", "load_xml", "load_mongo"):
-
                     loader = GameLoader(image_map=images)
 
                     if result == "load_json":
@@ -63,24 +70,29 @@ def main():
                     for cell in game.cells:
                         for target in cell.connections:
                             # Tylko jednostronne, by nie dublować
-                            if not any(anim.start_cell == cell and anim.end_cell == target for anim in game.animating_connections):
-                                game.animating_connections.append(AnimatedConnection(cell, target, speed=1.0))  # speed=1.0 natychmiast kończy animację
-
+                            if not any(
+                                anim.start_cell == cell and anim.end_cell == target
+                                for anim in game.animating_connections
+                            ):
+                                game.animating_connections.append(
+                                    AnimatedConnection(cell, target, speed=1.0)
+                                )  # speed=1.0 = natychmiast kończy animację
 
                     current_turn = loaded_data["turn"]
                     game.turn_order = game.compute_turn_order()  # <- TO JEST KLUCZOWE
                     game.current_turn_index = game.turn_order.index(current_turn)
                     game.timer = loaded_data["timer"]
 
-
                     current_scene = "game"
                     continue  # od razu przejdź do aktualizacji gry w tej samej pętli
-
                 else:
                     cells = []
 
+                # start nowej gry na wybranym etapie
                 game = GameScene(cells, images)
                 current_scene = "game"
+
+            # rysuj menu
             menu.update(clock.get_time() / 1000)
             menu.draw(WINDOW)
 
@@ -89,8 +101,8 @@ def main():
             if result == "menu":
                 menu = MenuScene(images, WINDOW, manager)
                 current_scene = "menu"
-            elif result == "restart":   
-                #cells = []
+            elif result == "restart":
+                # restart bieżącej planszy
                 game = GameScene(cells, images)
             else:
                 game.update()
