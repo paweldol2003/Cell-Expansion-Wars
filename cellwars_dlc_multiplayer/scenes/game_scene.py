@@ -146,7 +146,7 @@ class GameScene:
         # Strzelanie co 50 klatek
         shoot = (self.timer % 50 == 0)
         for anim in self.animating_connections:
-            anim.update(shoot=shoot)
+            anim.update(self, shoot=shoot)
 
 
         self.animating_connections = [

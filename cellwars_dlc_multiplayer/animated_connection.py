@@ -17,7 +17,7 @@ class AnimatedConnection:
         self.to_destroy = False
         self.mutual = False  # czy połączenie jest wzajemne
 
-    def update(self, shoot):
+    def update(self, scene, shoot):
 
         self.mutual = (self.attacked_cell in self.attacking_cell.connections and 
         self.attacking_cell in self.attacked_cell.connections)
@@ -53,7 +53,9 @@ class AnimatedConnection:
                             self.attacked_cell.owner_id = self.attacking_cell.owner_id
                             self.attacked_cell.units = abs(self.attacked_cell.units)
                             self.attacked_cell.color = self.attacking_cell.color
-                            self.attacked_cell.connections.clear()  
+                            for anim in scene.animating_connections:
+                                if anim.attacking_cell == self.attacked_cell:
+                                    anim.mark_for_removal = True
         # Usuń zakończone kule
         self.bullets = [b for b in self.bullets if not b.done]
 
